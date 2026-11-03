@@ -1,0 +1,4 @@
+pgparser
+Derived from multigres (https://github.com/multigres/multigres, Apache License 2.0) at commit a75cd06b8fbeb2bc52beb2a09c5d31d778a75fb7 (2026-11-03).
+Changes: import paths rewritten from github.com/multigres/multigres/go/common/parser to github.com/namiri-tech/pgparser;
+goyacc/ and parse_benchmark_test.go removed.

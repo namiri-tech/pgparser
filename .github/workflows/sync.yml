@@ -1,0 +1,40 @@
+name: sync
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: multigres commit to sync to (main's HEAD when empty)
+        required: false
+permissions:
+  contents: write
+  pull-requests: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: ./sync.sh ${{ inputs.commit }}
+      - name: Open a pull request if upstream changed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet && [ -z "$(git status --porcelain)" ]; then
+            echo "No upstream changes"
+            exit 0
+          fi
+          sha=$(cut -d' ' -f1 UPSTREAM)
+          branch="sync/${sha:0:12}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git switch -c "$branch"
+          git add -A
+          git commit -m "Sync to multigres ${sha:0:12}"
+          git push -f origin "$branch"
+          gh pr create --title "Sync to multigres ${sha:0:12}" \
+            --body "Runs \`sync.sh\` against multigres $(cat UPSTREAM). Tag the next minor version after merging." \
+            || echo "A pull request for $branch already exists"
